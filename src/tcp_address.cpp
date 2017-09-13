@@ -236,8 +236,9 @@ int zmq::tcp_address_t::resolve_nic_name (const char *nic_, bool ipv6_, bool is_
 }
 
 #elif (defined ZMQ_HAVE_WINDOWS)
-
-#include <netioapi.h>
+#include <ws2def.h>
+#include <ws2ipdef.h>
+#include <iphlpapi.h>
 
 int zmq::tcp_address_t::get_interface_name(unsigned long index, char ** dest) const {
 #ifdef ZMQ_HAVE_WINDOWS_UWP
