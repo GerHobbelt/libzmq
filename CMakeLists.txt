@@ -745,7 +745,7 @@ endif()
 if (MSVC)
   # Suppress linker warnings caused by #ifdef omission
   # of file content.
-  set( CMAKE_STATIC_LINKER_FLAGS /ignore:4221 )
+  set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /ignore:4221")
   if (BUILD_SHARED)
     add_library (libzmq SHARED ${sources} ${public_headers} ${html-docs} ${readme-docs} ${CMAKE_CURRENT_BINARY_DIR}/NSIS.template.in)
     target_link_libraries (libzmq ${OPTIONAL_LIBRARIES})
@@ -877,9 +877,9 @@ if (BUILD_SHARED)
                  inproc_thr)
 
   if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug") # Why?
-  option (WITH_PERF_TOOL "Build with perf-tools" ON)
+    option (WITH_PERF_TOOL "Build with perf-tools" ON)
   else ()
-  option (WITH_PERF_TOOL "Build with perf-tools" OFF)
+    option (WITH_PERF_TOOL "Build with perf-tools" OFF)
   endif ()
 
   if (WITH_PERF_TOOL)
@@ -957,20 +957,10 @@ if (MSVC)
           PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
           COMPONENT SDK)
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    install (TARGETS ${target_outputs}
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-            COMPONENT SDK)
     if (NOT CMAKE_PDB_OUTPUT_DIRECTORY)
       install (FILES ${CMAKE_CURRENT_BINARY_DIR}/bin/libzmq${MSVC_TOOLSET}-mt-gd-${ZMQ_VERSION_MAJOR}_${ZMQ_VERSION_MINOR}_${ZMQ_VERSION_PATCH}.pdb DESTINATION lib
             COMPONENT SDK)
-    endif ()
-  else ()
-    install (TARGETS libzmq
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-            PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-            COMPONENT Runtime)
+    endif()
   endif ()
 else ()
   install (TARGETS ${target_outputs}
