@@ -231,6 +231,12 @@ uint64_t zmq::clock_t::rdtsc ()
 {
 #if (defined _MSC_VER && (defined _M_IX86 || defined _M_X64))
     return __rdtsc ();
+#elif (defined _MSC_VER && (defined _M_ARM))
+    return __rdpmccntr64 ();
+#elif (defined _MSC_VER && (defined _M_ARM64))
+    LARGE_INTEGER performanceCount;
+    QueryPerformanceCounter(&performanceCount);
+    return performanceCount.QuadPart;
 #elif (defined __GNUC__ && (defined __i386__ || defined __x86_64__))
     uint32_t low, high;
     __asm__ volatile ("rdtsc" : "=a" (low), "=d" (high));

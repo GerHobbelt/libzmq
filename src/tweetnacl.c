@@ -851,6 +851,7 @@ int crypto_sign_open(u8 *m,u64 *mlen,const u8 *sm,u64 n,const u8 *pk)
 
 #ifdef ZMQ_HAVE_WINDOWS
 
+#if !(defined _M_ARM64 || defined _M_ARM)
 #include <windows.h>
 #include <wincrypt.h>
 
@@ -897,6 +898,38 @@ int randombytes_close(void)
     }
     return rc;
 }
+#else
+
+#include <windows.h>
+#include <bcrypt.h>
+#pragma comment(lib, "bcrypt")
+
+void randombytes(unsigned char *x,unsigned long long xlen)
+{
+    unsigned i;
+    NTSTATUS status;
+
+    while (xlen > 0) {
+        if (xlen < 1048576)
+            i = (unsigned) xlen;
+        else
+            i = 1048576;
+
+        status = BCryptGenRandom(NULL, x, i, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+        if (status < 0) {
+            Sleep(1);
+            continue;
+        }
+        x += i;
+        xlen -= i;
+    }
+}
+
+int randombytes_close(void)
+{
+  return 0;
+}
+#endif
 
 #else
 
