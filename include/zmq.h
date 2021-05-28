@@ -57,21 +57,6 @@ extern "C" {
 #endif
 #include <stddef.h>
 #include <stdio.h>
-#if defined _WIN32
-//  Set target version to Windows Server 2008, Windows Vista or higher.
-//  Windows XP (0x0501) is supported but without client & server socket types.
-#ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0600
-#endif
-
-#ifdef __MINGW32__
-//  Require Windows XP or higher with MinGW for getaddrinfo().
-#if (_WIN32_WINNT >= 0x0501)
-#else
-#error You need at least Windows XP target
-#endif
-#endif
-#endif
 
 /*  Handle DSO symbol visibility                                             */
 #if defined _WIN32
@@ -683,6 +668,7 @@ ZMQ_EXPORT void zmq_threadclose (void *thread_);
 #define ZMQ_HELLO_MSG 110
 #define ZMQ_DISCONNECT_MSG 111
 #define ZMQ_PRIORITY 112
+#define ZMQ_BUSY_POLL 113
 
 /*  DRAFT ZMQ_RECONNECT_STOP options                                          */
 #define ZMQ_RECONNECT_STOP_CONN_REFUSED 0x1
