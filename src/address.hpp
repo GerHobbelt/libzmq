@@ -35,9 +35,14 @@
 #include <string>
 
 #ifndef ZMQ_HAVE_WINDOWS
+#ifdef _WIN32
+#include <winsock2.h>
+#include <WS2tcpip.h>
+#else
 #include <sys/socket.h>
 #else
 #include <ws2tcpip.h>
+#endif
 #endif
 
 namespace zmq
