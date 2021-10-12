@@ -416,6 +416,9 @@ LIBZMQ_CHECK_DOC_BUILD
 # Check polling system, set appropriate macro in src/platform.hpp
 LIBZMQ_CHECK_POLLER
 
+# Check for pselect to activate ppoll, set appropriate macro in src/platform.hpp
+LIBZMQ_CHECK_PPOLL
+
 # Check cacheline size, set appropriate macro in src/platform.hpp
 LIBZMQ_CHECK_CACHELINE
 
@@ -1146,6 +1149,11 @@ AC_ARG_WITH([pkgconfigdir],
     [pkgconfigdir="$withval"],
     [pkgconfigdir='${libdir}/pkgconfig'])
 AC_SUBST([pkgconfigdir])
+
+AC_ARG_ENABLE([no-export],
+    [AS_HELP_STRING([--enable-no-export],
+        [Build libzmq with empty ZMQ_EXPORT macro, bypassing platform-based automated detection [default=no]])],
+    [CPPFLAGS="-DZMQ_NO_EXPORT $CPPFLAGS"])
 
 AC_CONFIG_FILES([ \
     Makefile \

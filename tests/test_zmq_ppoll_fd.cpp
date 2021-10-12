@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007-2017 Contributors as noted in the AUTHORS file
+    Copyright (c) 2021 Contributors as noted in the AUTHORS file
 
     This file is part of libzmq, the ZeroMQ core engine in C++.
 
@@ -30,68 +30,61 @@
 #include "testutil.hpp"
 #include "testutil_unity.hpp"
 
-void setUp ()
+#include <string.h>
+
+#ifndef _WIN32
+#include <netdb.h>
+#include <unistd.h>
+#endif
+
+SETUP_TEARDOWN_TESTCONTEXT
+
+void test_ppoll_fd ()
 {
-}
+#ifdef ZMQ_HAVE_PPOLL
+    int recv_socket = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    TEST_ASSERT_NOT_EQUAL (-1, recv_socket);
 
-void tearDown ()
-{
-}
+    int flag = 1;
+    TEST_ASSERT_SUCCESS_ERRNO (
+      setsockopt (recv_socket, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof (int)));
 
-#define THREAD_COUNT 100
+    struct sockaddr_in saddr = bind_bsd_socket (recv_socket);
 
-struct thread_data
-{
-    char endpoint[MAX_SOCKET_STRING];
-};
+    void *sb = test_context_socket (ZMQ_REP);
 
-extern "C" {
-static void worker (void *data_)
-{
-    const thread_data *const tdata = static_cast<const thread_data *> (data_);
+    TEST_ASSERT_SUCCESS_ERRNO (zmq_bind (sb, "tcp://127.0.0.1:*"));
 
-    void *socket = zmq_socket (get_test_context (), ZMQ_SUB);
+    zmq_pollitem_t pollitems[] = {
+      {sb, 0, ZMQ_POLLIN, 0},
+      {NULL, recv_socket, ZMQ_POLLIN, 0},
+    };
 
-    TEST_ASSERT_SUCCESS_ERRNO (zmq_connect (socket, tdata->endpoint));
+    int send_socket = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    TEST_ASSERT_NOT_EQUAL (-1, send_socket);
 
-    //  Start closing the socket while the connecting process is underway.
-    TEST_ASSERT_SUCCESS_ERRNO (zmq_close (socket));
-}
-}
+    char buf[10];
+    memset (buf, 1, 10);
 
-void test_shutdown_stress ()
-{
-    void *threads[THREAD_COUNT];
+    TEST_ASSERT_SUCCESS_ERRNO (sendto (
+      send_socket, buf, 10, 0, (struct sockaddr *) &saddr, sizeof (saddr)));
 
-    for (int j = 0; j != 10; j++) {
-        //  Check the shutdown with many parallel I/O threads.
-        struct thread_data tdata;
-        setup_test_context ();
-        zmq_ctx_set (get_test_context (), ZMQ_IO_THREADS, 7);
+    TEST_ASSERT_EQUAL (1, zmq_ppoll (pollitems, 2, 1, NULL));
+    TEST_ASSERT_BITS_LOW (ZMQ_POLLIN, pollitems[0].revents);
+    TEST_ASSERT_BITS_HIGH (ZMQ_POLLIN, pollitems[1].revents);
 
-        void *socket = test_context_socket (ZMQ_PUB);
+    test_context_socket_close (sb);
 
-        bind_loopback_ipv4 (socket, tdata.endpoint, sizeof (tdata.endpoint));
-
-        for (int i = 0; i != THREAD_COUNT; i++) {
-            threads[i] = zmq_threadstart (&worker, &tdata);
-        }
-
-        for (int i = 0; i != THREAD_COUNT; i++) {
-            zmq_threadclose (threads[i]);
-        }
-
-        test_context_socket_close (socket);
-
-        teardown_test_context ();
-    }
+    close (send_socket);
+    close (recv_socket);
+#else
+    TEST_IGNORE_MESSAGE ("libzmq without zmq_ppoll, ignoring test");
+#endif // ZMQ_HAVE_PPOLL
 }
 
 int main ()
 {
-    setup_test_environment (180);
-
     UNITY_BEGIN ();
-    RUN_TEST (test_shutdown_stress);
+    RUN_TEST (test_ppoll_fd);
     return UNITY_END ();
 }

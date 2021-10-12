@@ -82,7 +82,7 @@ template <typename T, size_t S> class resizable_fast_vector_t
             _dynamic_buf = new (std::nothrow) std::vector<T> (nitems_);
             //  TODO since this function is called by a client, we could return errno == ENOMEM here
             alloc_assert (_dynamic_buf);
-            memcpy(&(*_dynamic_buf)[0], _static_buf, sizeof _static_buf);
+            memcpy (&(*_dynamic_buf)[0], _static_buf, sizeof _static_buf);
         }
     }
 
@@ -108,8 +108,9 @@ typedef int timeout_t;
 
 timeout_t
 compute_timeout (bool first_pass_, long timeout_, uint64_t now_, uint64_t end_);
-
-#elif defined ZMQ_POLL_BASED_ON_SELECT
+#endif
+#if (!defined ZMQ_POLL_BASED_ON_POLL && defined ZMQ_POLL_BASED_ON_SELECT)      \
+  || defined ZMQ_HAVE_PPOLL
 #if defined ZMQ_HAVE_WINDOWS
 inline size_t valid_pollset_bytes (const fd_set &pollset_)
 {

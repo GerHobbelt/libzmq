@@ -1,6 +1,6 @@
 # ZeroMQ
 
-[![Build Status](https://travis-ci.com/zeromq/libzmq.svg?branch=master)](https://travis-ci.com/zeromq/libzmq)
+[![Build Status](https://github.com/zeromq/libzmq/actions/workflows/CI.yaml/badge.svg)](https://github.com/zeromq/libzmq/actions/workflows/CI.yaml)
 [![Build status](https://ci.appveyor.com/api/projects/status/e2ks424yrs1un3wt?svg=true)](https://ci.appveyor.com/project/zeromq/libzmq)
 [![Coverage Status](https://coveralls.io/repos/github/zeromq/libzmq/badge.svg?branch=master)](https://coveralls.io/github/zeromq/libzmq?branch=master)
 
@@ -176,7 +176,7 @@ Announcements mailing list: zeromq-announce@lists.zeromq.org
 Git repository: http://github.com/zeromq/libzmq
 
 ZeroMQ developers can also be found on the IRC channel #zeromq, on the
-Freenode network (irc.freenode.net).
+Libera Chat network (irc.libera.chat).
 
 ## License
 
