@@ -1439,6 +1439,10 @@ if(BUILD_SHARED)
     target_link_libraries(libzmq ${LIBBSD_LIBRARIES})
   endif()
 
+  if(OPENPGM_FOUND)
+    target_link_libraries(libzmq ${OPENPGM_LIBRARIES})
+  endif()
+
   if(SODIUM_FOUND)
     target_link_libraries(libzmq ${SODIUM_LIBRARIES})
     # On Solaris, libsodium depends on libssp
@@ -1482,6 +1486,10 @@ if(BUILD_STATIC)
 
   if(NSS3_FOUND)
     target_link_libraries(libzmq-static ${NSS3_LIBRARIES})
+  endif()
+
+  if(OPENPGM_FOUND)
+    target_link_libraries(libzmq-static pgm ${OPENPGM_LIBRARIES})
   endif()
 
   if(SODIUM_FOUND)
@@ -1550,6 +1558,10 @@ if(BUILD_SHARED)
 
       if(NSS3_FOUND)
         target_link_libraries(${perf-tool} ${NSS3_LIBRARIES})
+      endif()
+
+      if(OPENPGM_FOUND)
+        target_link_libraries(${perf-tool} ${OPENPGM_LIBRARIES})
       endif()
 
       if(SODIUM_FOUND)
