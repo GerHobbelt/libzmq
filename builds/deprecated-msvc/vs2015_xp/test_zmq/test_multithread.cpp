@@ -10,8 +10,6 @@ send random size message to each socket and check server answer
 #define ZMQ_BUILD_DRAFT_API
 #include "../../../../include/zmq.h"
 
-#pragma comment(lib,"libzmq.lib")
-
 #include <assert.h>
 #include <stdlib.h>
 #include <thread>
