@@ -27,17 +27,17 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#if __cplusplus >= 201103L
-
-#include "radix_tree.hpp"
-#include "trie.hpp"
-
 #include <chrono>
 #include <cstddef>
 #include <cstdio>
 #include <random>
 #include <ratio>
 #include <vector>
+
+#if (__cplusplus >= 201103L) || defined(_MSC_VER)
+
+#include "radix_tree.hpp"
+#include "trie.hpp"
 
 const std::size_t nkeys = 10000;
 const std::size_t nqueries = 1000000;
@@ -77,6 +77,10 @@ void benchmark_lookup (T &subscriptions_,
     std::printf ("Average lookup time = %.1lf ns\n",
                  static_cast<double> (sum) / samples);
 }
+
+#if defined(BUILD_MONOLITHIC)
+#define main        zmq_benchmark_radix_tree_main
+#endif
 
 int main ()
 {
@@ -124,8 +128,14 @@ int main ()
 
 #else
 
+#if defined(BUILD_MONOLITHIC)
+#define main        zmq_benchmark_radix_tree_main
+#endif
+
 int main ()
 {
+	fprintf(stderr, "Not supported.\n");
+	return EXIT_FAILURE;
 }
 
 #endif

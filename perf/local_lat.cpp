@@ -31,7 +31,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int main (int argc, char *argv[])
+
+#if defined(BUILD_MONOLITHIC)
+#define main        zmq_perf_local_lat_main
+#endif
+
+int main (int argc, const char **argv)
 {
     const char *bind_to;
     int roundtrip_count;

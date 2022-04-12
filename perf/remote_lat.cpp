@@ -32,7 +32,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-int main (int argc, char *argv[])
+
+#if defined(BUILD_MONOLITHIC)
+#define main        zmq_perf_remote_lat_main
+#endif
+
+int main (int argc, const char **argv)
 {
     const char *connect_to;
     int roundtrip_count;

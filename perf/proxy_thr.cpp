@@ -322,7 +322,12 @@ void terminate_proxy (const proxy_hwm_cfg_t *cfg)
 //  The main thread simply starts some publishers, a proxy,
 //  and a subscriber. Finish when all packets are received.
 
-int main (int argc, char *argv[])
+
+#if defined(BUILD_MONOLITHIC)
+#define main        zmq_perf_proxy_thr_main
+#endif
+
+int main (int argc, const char **argv)
 {
     if (argc != 3) {
         printf ("usage: proxy_thr <message-size> <message-count>\n");

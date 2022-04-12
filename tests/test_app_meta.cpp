@@ -158,7 +158,12 @@ void test_app_meta_reqrep ()
 }
 
 
-int main ()
+
+#if defined(BUILD_MONOLITHIC)
+#define main        zmq_test_app_meta_main
+#endif
+
+int main (void)
 {
     setup_test_environment ();
 

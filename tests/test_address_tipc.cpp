@@ -89,7 +89,12 @@ void test_tipc_bad_addresses ()
 }
 
 
-int main ()
+
+#if defined(BUILD_MONOLITHIC)
+#define main        zmq_test_address_tipc_main
+#endif
+
+int main (void)
 {
     setup_test_environment ();
 

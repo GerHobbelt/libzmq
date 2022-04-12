@@ -106,7 +106,12 @@ static void *worker (void *ctx_)
 #endif
 }
 
-int main(int argc, char *argv[])
+
+#if defined(BUILD_MONOLITHIC)
+#define main        zmq_perf_inproc_lat_main
+#endif
+
+int main(int argc, const char **argv)
 {
 #if defined ZMQ_HAVE_WINDOWS
     HANDLE local_thread;

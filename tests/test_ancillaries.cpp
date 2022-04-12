@@ -60,7 +60,12 @@ void test_strerrror ()
     TEST_ASSERT_NOT_NULL (zmq_strerror (EINVAL));
 }
 
-int main ()
+
+#if defined(BUILD_MONOLITHIC)
+#define main        zmq_test_ancillaries_main
+#endif
+
+int main (void)
 {
     setup_test_environment ();
 

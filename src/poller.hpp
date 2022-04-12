@@ -55,6 +55,7 @@
 #elif defined ZMQ_HAVE_GNU
 #define ZMQ_IOTHREAD_POLLER_USE_POLL
 #include "poll.hpp"
+#elif defined _MSC_VER && defined _WIN32
 #else
 #error None of the ZMQ_IOTHREAD_POLLER_USE_* macros defined
 #endif

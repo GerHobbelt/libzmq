@@ -65,6 +65,11 @@ void test_empty_abstract_name ()
     test_context_socket_close (sb);
 }
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main        zmq_test_abstract_ipc_main
+#endif
+
 int main (void)
 {
     setup_test_environment ();
