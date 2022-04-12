@@ -313,7 +313,7 @@ if(WIN32)
   if(CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" AND CMAKE_SYSTEM_VERSION MATCHES "^10.0")
     set(ZMQ_HAVE_WINDOWS_UWP ON)
     set(ZMQ_HAVE_IPC OFF)
-    # to remove compile warninging "D9002 ignoring unknown option"
+    # to remove compile warning "D9002 ignoring unknown option"
     string(REPLACE "/Zi" "" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
     set(CMAKE_CXX_FLAGS_DEBUG
         ${CMAKE_CXX_FLAGS_DEBUG}
