@@ -45,9 +45,8 @@ include $(TOP)/configure/RULES
 #  ADD RULES AFTER THIS LINE
 
 ifdef T_A
-install:
-	$(CMAKE) $(TOP) -G "$(CMAKE_GENERATOR)" $(CMAKE_PLATFORM) -DCMAKE_INSTALL_PREFIX:PATH="$(LIBZMQ_INSTALL)" $(CMAKE_CONFIG_FLAGS)
-	$(CMAKE) --build . --target install --config $(CMAKE_CONFIG) $(CMAKE_BUILD_FLAGS)
+# split install rule, seems to be needed to get *.lib wilcard to work correctly
+install: install2
 	-$(MKDIR) $(TOP)/bin
 	-$(MKDIR) $(TOP)/bin/$(EPICS_HOST_ARCH)
 	-$(MKDIR) $(TOP)/lib
@@ -68,6 +67,11 @@ else
 endif
 endif
 endif
+
+install2:
+	$(CMAKE) $(TOP) -G "$(CMAKE_GENERATOR)" $(CMAKE_PLATFORM) -DCMAKE_INSTALL_PREFIX:PATH="$(LIBZMQ_INSTALL)" $(CMAKE_CONFIG_FLAGS)
+	$(CMAKE) --build . --target install --config $(CMAKE_CONFIG) $(CMAKE_BUILD_FLAGS)
+
 
 #clean::
 #	$(MAKE) -C mysql-connector-c -f Makefile.epics clean T_A=$(T_A) CMAKE_CONFIG=$(CMAKE_CONFIG) PLATFORM=$(PLATFORM) MYSQL_DIR="$(MYSQL_DIR)"
