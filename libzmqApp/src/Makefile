@@ -56,9 +56,9 @@ ifeq ($(findstring linux,$(EPICS_HOST_ARCH)),)
 	$(CP) -f $(LIBZMQ_INSTALL)/bin/*.exe $(TOP)/bin/$(EPICS_HOST_ARCH)/
 	$(CP) -f $(LIBZMQ_INSTALL)/bin/*.dll $(TOP)/bin/$(EPICS_HOST_ARCH)/
 ifeq ($(findstring static,$(EPICS_HOST_ARCH)),)
-	$(CP) -f $(LIBZMQ_INSTALL)/lib/libzmq-*-gd-*.lib $(TOP)/lib/$(EPICS_HOST_ARCH)/zmq.lib
+	$(CP) -f $(filter-out $(wildcard $(LIBZMQ_INSTALL)/lib/libzmq-*s*.lib), $(wildcard $(LIBZMQ_INSTALL)/lib/libzmq-*.lib)) $(TOP)/lib/$(EPICS_HOST_ARCH)/zmq.lib
 else
-	$(CP) -f $(LIBZMQ_INSTALL)/lib/libzmq-*-sgd-*.lib $(TOP)/lib/$(EPICS_HOST_ARCH)/zmq.lib
+	$(CP) -f $(LIBZMQ_INSTALL)/lib/libzmq-*s*.lib $(TOP)/lib/$(EPICS_HOST_ARCH)/zmq.lib
 endif
 else
 ifeq ($(findstring static,$(EPICS_HOST_ARCH)),)
