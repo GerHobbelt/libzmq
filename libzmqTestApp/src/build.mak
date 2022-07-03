@@ -27,6 +27,10 @@ $(APPNAME)_LIBS += zmq
 
 USR_CXXFLAGS += -I$(CPPZMQ)
 
+ifneq ($(findstring static,$(EPICS_HOST_ARCH)),)
+USR_CXXFLAGS += -DZMQ_STATIC
+endif
+
 $(APPNAME)_SRCS += zmqtest.cpp cppzmqtest.cpp
 
 # libzmqTest_registerRecordDeviceDriver.cpp derives from libzmqTest.dbd

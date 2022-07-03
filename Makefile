@@ -26,6 +26,8 @@ $(foreach dir, $(filter %Top, $(DIRS)), \
 # iocBoot depends on all *App dirs
 iocBoot_DEPEND_DIRS += $(filter %App,$(DIRS))
 
+libzmqTestApp_DEPEND_DIRS += libzmqApp
+
 # Add any additional dependency rules here:
 
 include $(TOP)/configure/RULES_TOP
