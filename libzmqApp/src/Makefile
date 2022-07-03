@@ -28,10 +28,8 @@ CMAKE_GENERATOR=Visual Studio $(VS_ARCH)
 CMAKE_PLATFORM=-A $(PLATFORM)
 ifeq ($(findstring static,$(EPICS_HOST_ARCH)),)
 CMAKE_CONFIG_FLAGS += -DBUILD_SHARED_LIBS=ON
-WININSTLIB=lib
 else
 CMAKE_CONFIG_FLAGS += -DBUILD_SHARED_LIBS=OFF
-WININSTLIB=staticlib
 endif
 endif
 ifneq ($(findstring debug,$(EPICS_HOST_ARCH)),)
@@ -62,8 +60,12 @@ ifeq ($(findstring static,$(EPICS_HOST_ARCH)),)
 else
 	$(CP) -f $(LIBZMQ_INSTALL)/lib/libzmq-*-sgd-*.lib $(TOP)/lib/$(EPICS_HOST_ARCH)/zmq.lib
 endif
-#else
-#	$(CP) -f $(OPENCV_INSTALL)/lib*/libopencv* $(TOP)/lib/$(EPICS_HOST_ARCH)/
+else
+ifeq ($(findstring static,$(EPICS_HOST_ARCH)),)
+	$(CP) -f $(LIBZMQ_INSTALL)/lib*/libzmq.so* $(TOP)/lib/$(EPICS_HOST_ARCH)/
+else
+	$(CP) -f $(LIBZMQ_INSTALL)/lib*/libzmq.a $(TOP)/lib/$(EPICS_HOST_ARCH)/
+endif
 endif
 endif
 
