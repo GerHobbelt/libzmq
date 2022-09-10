@@ -306,6 +306,7 @@ set(POLLER
   kqueue, epoll, devpoll, pollset, poll or select [default=autodetect]")
 
 if(WIN32)
+  set(ZMQ_HAVE_IPC OFF)
   if(CMAKE_SYSTEM_NAME STREQUAL "WindowsStore" AND CMAKE_SYSTEM_VERSION MATCHES "^10.0")
     set(ZMQ_HAVE_WINDOWS_UWP ON)
     set(ZMQ_HAVE_IPC OFF)
@@ -485,7 +486,7 @@ endif()
 if(NOT WIN32)
   set(ZMQ_HAVE_IPC 1)
 else()
-  check_include_files("winsock2.h;afunix.h" ZMQ_HAVE_IPC)
+  set(ZMQ_HAVE_IPC 0)
 endif()
 
 # ##################### BEGIN condition_variable_t selection
