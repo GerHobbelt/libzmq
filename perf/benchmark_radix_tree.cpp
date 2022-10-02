@@ -124,6 +124,8 @@ int main ()
 
     for (auto &op : input_set)
         delete[] op;
+
+	return 0;
 }
 
 #else
