@@ -86,7 +86,7 @@ zmq::ip_addr_t zmq::ip_addr_t::any (int family_)
         memcpy (&ip6_addr->sin6_addr, &in6addr_any, sizeof (in6addr_any));
 #endif
     } else {
-        assert (0 == "unsupported address family");
+        assert (!"unsupported address family");
     }
 
     return addr;

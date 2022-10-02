@@ -30,6 +30,8 @@
 #ifndef __ZMQ_POLLER_HPP_INCLUDED__
 #define __ZMQ_POLLER_HPP_INCLUDED__
 
+#include "platform.hpp"
+
 #if defined ZMQ_IOTHREAD_POLLER_USE_KQUEUE                                     \
     + defined ZMQ_IOTHREAD_POLLER_USE_EPOLL                                    \
     + defined ZMQ_IOTHREAD_POLLER_USE_DEVPOLL                                  \
@@ -56,6 +58,9 @@
 #define ZMQ_IOTHREAD_POLLER_USE_POLL
 #include "poll.hpp"
 #elif defined _MSC_VER && defined _WIN32
+#define ZMQ_IOTHREAD_POLLER_USE_EPOLL
+#define ZMQ_POLL_BASED_ON_SELECT
+#include "epoll.hpp"
 #else
 #error None of the ZMQ_IOTHREAD_POLLER_USE_* macros defined
 #endif

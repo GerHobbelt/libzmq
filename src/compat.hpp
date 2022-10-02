@@ -58,7 +58,6 @@ static inline int strcpy_s (char (&dest_)[size], const char *const src_)
     const size_t res = strlcpy (dest_, src_, size);
     return res >= size ? ERANGE : 0;
 }
-#endif
 
 #ifndef HAVE_STRNLEN
 static inline size_t strnlen (const char *s, size_t len)
@@ -70,6 +69,8 @@ static inline size_t strnlen (const char *s, size_t len)
 
     return len;
 }
+#endif
+
 #endif
 
 #endif
