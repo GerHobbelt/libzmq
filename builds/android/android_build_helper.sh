@@ -31,6 +31,7 @@
 #
 ###
 #
+# Courtesy of Joe Eli McIlvain; original code at:
 # https://github.com/jemc/android_build_helper
 #   android_build_helper.sh
 #
@@ -43,9 +44,11 @@
 # To get the latest version of this script, please download from:
 #   https://github.com/jemc/android_build_helper
 #
-# You are free to modify this script, but if you add improvements,
-# please consider submitting a pull request to the aforementioned upstream
-# repository for the benefit of other users.
+# You are free to modify and redistribute this script, but if you add
+# improvements, please consider submitting a pull request or patch to the
+# aforementioned upstream repository for the benefit of other users.
+#
+# This script is provided with no express or implied warranties.
 #
 
 ########################################################################
@@ -81,8 +84,10 @@ function android_download_ndk {
         ANDROID_BUILD_FAIL+=("  $(dirname "${ANDROID_NDK_ROOT}/")")
     fi
 
-    local platform="$(uname | tr '[:upper:]' '[:lower:]')"
+    android_build_check_fail
+
     local filename
+    local platform="$(uname | tr '[:upper:]' '[:lower:]')"
     case "${platform}" in
         linux*)
             if [ "${NDK_NUMBER}" -ge 2300 ] ; then
@@ -167,9 +172,9 @@ function android_build_set_env {
 
     # Since NDK r22 the "platforms" dir got removed
     if [ -d "${ANDROID_NDK_ROOT}/platforms" ]; then
-       export ANDROID_BUILD_SYSROOT="${ANDROID_NDK_ROOT}/platforms/android-${MIN_SDK_VERSION}/arch-${TOOLCHAIN_ARCH}"
+        export ANDROID_BUILD_SYSROOT="${ANDROID_NDK_ROOT}/platforms/android-${MIN_SDK_VERSION}/arch-${TOOLCHAIN_ARCH}"
     else
-       export ANDROID_BUILD_SYSROOT="${ANDROID_BUILD_TOOLCHAIN}/sysroot"
+        export ANDROID_BUILD_SYSROOT="${ANDROID_BUILD_TOOLCHAIN}/sysroot"
     fi
     export ANDROID_BUILD_PREFIX="${ANDROID_BUILD_DIR}/prefix/${TOOLCHAIN_ARCH}"
 
@@ -177,10 +182,10 @@ function android_build_set_env {
     export ANDROID_STL="libc++_shared.so"
     if [ -x "${ANDROID_NDK_ROOT}/sources/cxx-stl/llvm-libc++/libs/${TOOLCHAIN_ABI}/${ANDROID_STL}" ] ; then
         export ANDROID_STL_ROOT="${ANDROID_NDK_ROOT}/sources/cxx-stl/llvm-libc++/libs/${TOOLCHAIN_ABI}"
-    else 
+    else
         export ANDROID_STL_ROOT="${ANDROID_BUILD_SYSROOT}/usr/lib/${TOOLCHAIN_HOST}"
 
-        # NDK 25 requires -L<path-to-libc.so> ... 
+        # NDK 25 requires -L<path-to-libc.so> ...
         # I don't understand why, but without it, ./configure fails to build a valid 'conftest'.
         export ANDROID_LIBC_ROOT="${ANDROID_BUILD_SYSROOT}/usr/lib/${TOOLCHAIN_HOST}/${MIN_SDK_VERSION}"
     fi
@@ -455,6 +460,72 @@ function android_show_configure_opts {
     echo ""
 }
 
+# Initialize env variable XXX_ROOT, given dependency name "xxx".
+# If XXX_ROOT is not set:
+#    If ${PROJECT_ROOT}/../xxx exists
+#        set XXX_ROOT with it.
+#    Else
+#        set XXX_ROOT with ${ANDROID_DEPENDENCIES_DIR}/xxx.
+# Else
+#    Verify that folder XXX_ROOT exists.
+function android_init_dependency_root {
+    local lib_name
+    lib_name="$1"
+    local variable_name
+    variable_name="$(echo "${lib_name}" | tr '[:lower:]' '[:upper:]')_ROOT"
+    local variable_value
+    variable_value="$(eval echo "\${${variable_name}}")"
+
+    if [ -z "${PROJECT_ROOT}" ] ; then
+        android_build_trace "Error: Variable PROJECT_ROOT is not set."
+        exit 1
+    fi
+    if [ ! -d "${PROJECT_ROOT}" ] ; then
+        android_build_trace "Error: Cannot find folder '${PROJECT_ROOT}'."
+        exit 1
+    fi
+
+    if [ -z "${variable_value}" ] ; then
+        if [ -d "${PROJECT_ROOT}/../${lib_name}" ] ; then
+            eval "export ${variable_name}=\"$(cd "${PROJECT_ROOT}/../${lib_name}" && pwd)\""
+        else
+            eval "export ${variable_name}=\"${ANDROID_DEPENDENCIES_DIR}/${lib_name}\""
+        fi
+        variable_value="$(eval echo "\${${variable_name}}")"
+    elif [ ! -d "${variable_value}" ] ; then
+        android_build_trace "Error: Folder '${variable_value}' does not exist."
+        exit 1
+    fi
+
+    android_build_trace "${variable_name}=${variable_value}"
+}
+
+function android_download_library {
+    local tag="$1" ; shift
+    local root="$1" ; shift
+    local url="$1" ; shift
+    local parent="$(dirname "${root}")"
+    local archive="$(basename "${url}")"
+
+    mkdir -p "${parent}"
+    cd "${parent}"
+
+    android_build_trace "Downloading ${tag} from '${url}' ..."
+    rm -f "${archive}"
+    wget -q "${url}"
+    case "${archive}" in
+        *."tar.gz" ) folder="$(basename "${archive}" ".tar.gz")" ;;
+        *."tgz" )    folder="$(basename "${archive}" ".tgz")" ;;
+        * ) android_build_trace "Unsupported extension for '${archive}'." ; exit 1 ;;
+    esac
+    android_build_trace "Extracting '${archive}' ..."
+    tar -xzf "${archive}"
+    if [ ! -d "${root}" ] ; then
+	mv "${folder}" "${root}"
+    fi
+    android_build_trace "${tag} extracted under under '${root}'."
+}
+
 function android_clone_library {
     local tag="$1" ; shift
     local root="$1" ; shift
@@ -523,8 +594,11 @@ function android_build_library {
 # Get directory of current script (if not already set)
 # This directory is also the basis for the build directories the get created.
 if [ -z "$ANDROID_BUILD_DIR" ]; then
-    ANDROID_BUILD_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    export ANDROID_BUILD_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 fi
+
+# Where to download our dependencies
+export ANDROID_DEPENDENCIES_DIR="${ANDROID_DEPENDENCIES_DIR:-/tmp/tmp-deps}"
 
 # Set up a variable to hold the global failure reasons, separated by newlines
 # (Empty string indicates no failure)
@@ -533,13 +607,10 @@ ANDROID_BUILD_FAIL=()
 ########################################################################
 # Sanity checks
 ########################################################################
-if [ -z "${NDK_VERSION}" ] ; then
-    android_build_trace "NDK_VERSION not set !"
-    exit 1
-fi
 case "${NDK_VERSION}" in
     "android-ndk-r"[0-9][0-9] ) : ;;
     "android-ndk-r"[0-9][0-9][a-z] ) : ;;
+    "" ) android_build_trace "Variable NDK_VERSION not set." ; exit 1 ;;
     * ) android_build_trace "Invalid format for NDK_VERSION ('${NDK_VERSION}')" ; exit 1 ;;
 esac
 
@@ -552,7 +623,7 @@ fi
 # Compute NDK version into a numeric form:
 #   android-ndk-r21e -> 2105
 #   android-ndk-r25  -> 2500
-########################################################################    
+########################################################################
 export NDK_NUMBER="$(( $(echo "${NDK_VERSION}"|sed -e 's|android-ndk-r||g' -e 's|[a-z]||g') * 100 ))"
 NDK_VERSION_LETTER="$(echo "${NDK_VERSION}"|sed -e 's|android-ndk-r[0-9][0-9]||g'|tr '[:lower:]' '[:upper:]')"
 if [ -n "${NDK_VERSION_LETTER}" ] ; then
