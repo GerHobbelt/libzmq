@@ -14,7 +14,10 @@ ANDROID_BUILD_DIR="${ANDROID_BUILD_DIR:-`pwd`}"
 source ./android_build_helper.sh
 
 # Choose a C++ standard library implementation from the ndk
-ANDROID_BUILD_CXXSTL="gnustl_shared_49"
+export ANDROID_BUILD_CXXSTL="gnustl_shared_49"
+
+# Additional flags for LIBTOOL, for LIBZMQ and other dependencies.
+export LIBTOOL_EXTRA_LDFLAGS='-avoid-version'
 
 BUILD_ARCH=$1
 if [ -z $BUILD_ARCH ]; then
@@ -70,10 +73,19 @@ elif [ $CURVE == "libsodium" ]; then
     (android_build_verify_so "libsodium.so" &> /dev/null) || {
         rm -rf "${cache}/libsodium"
         (cd "${cache}" && git clone -b stable --depth 1 https://github.com/jedisct1/libsodium.git) || exit 1
-        (cd "${cache}/libsodium" && ./autogen.sh \
-            && ./configure --quiet "${ANDROID_BUILD_OPTS[@]}" --disable-soname-versions \
+        (
+            CONFIG_OPTS=()
+            CONFIG_OPTS+=("--quiet")
+            CONFIG_OPTS+=("${ANDROID_BUILD_OPTS[@]}")
+	    CONFIG_OPTS+=("--disable-soname-versions")
+
+            cd "${cache}/libsodium" \
+            && ./autogen.sh \
+            && android_show_configure_opts "LIBSODIUM" "${CONFIG_OPTS[@]}" \
+            && ./configure "${CONFIG_OPTS[@]}" \
             && make -j 4 \
-            && make install) || exit 1
+            && make install
+        ) || exit 1
     }
 elif [ $CURVE == "tweetnacl" ]; then
     # Default
@@ -84,20 +96,33 @@ fi
 ##
 # Build libzmq from local source
 
-LIBTOOL_EXTRA_LDFLAGS='-avoid-version'
-
 (android_build_verify_so ${VERIFY} &> /dev/null) || {
     rm -rf "${cache}/libzmq"
     (cp -r ../.. "${cache}/libzmq" && cd "${cache}/libzmq" && ( make clean || : ))
 
-    (cd "${cache}/libzmq" && ./autogen.sh \
-        && ./configure --quiet "${ANDROID_BUILD_OPTS[@]}" ${CURVE} --without-docs \
+    (
+        CONFIG_OPTS=()
+        CONFIG_OPTS+=("--quiet")
+        CONFIG_OPTS+=("${ANDROID_BUILD_OPTS[@]}")
+        CONFIG_OPTS+=("${CURVE}")
+        CONFIG_OPTS+=("--without-docs")
+	
+        cd "${cache}/libzmq" \
+        && ./autogen.sh \
+        && android_show_configure_opts "LIBZMQ" "${CONFIG_OPTS[@]}" \
+        && ./configure "${CONFIG_OPTS[@]}" \
         && make -j 4 \
-        && make install) || exit 1
+        && make install
+    ) || exit 1
 }
+
+##
+# Fetch the STL as well.
+
+cp "${ANDROID_STL_ROOT}/${ANDROID_STL}" "${ANDROID_BUILD_PREFIX}/lib/."
 
 ##
 # Verify shared libraries in prefix
 
-android_build_verify_so ${VERIFY}
+android_build_verify_so "${VERIFY}" "${ANDROID_STL}"
 echo "libzmq android build succeeded"
