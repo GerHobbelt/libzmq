@@ -81,8 +81,30 @@ function android_download_ndk {
         ANDROID_BUILD_FAIL+=("  $(dirname "${ANDROID_NDK_ROOT}/")")
     fi
 
-    if [ -z "${ANDROID_NDK_FILENAME}" ] ; then
-        ANDROID_BUILD_FAIL+=("Please set the ANDROID_NDK_FILENAME environment variable")
+    local platform="$(uname | tr '[:upper:]' '[:lower:]')"
+    local filename
+    case "${platform}" in
+        linux*)
+            if [ "${NDK_NUMBER}" -ge 2300 ] ; then
+                # Since NDK 23, NDK archives are renamed.
+                filename=${NDK_VERSION}-linux.zip
+            else
+                filename=${NDK_VERSION}-linux-x86_64.zip
+            fi
+            ;;
+        darwin*)
+            if [ "${NDK_NUMBER}" -ge 2300 ] ; then
+                # Since NDK 23, NDK archives are renamed.
+                filename=${NDK_VERSION}-darwin.zip
+            else
+                filename=${NDK_VERSION}-darwin-x86_64.zip
+            fi
+            ;;
+        *)    android_build_trace "Unsupported platform ('${platform}')" ; exit 1 ;;
+    esac
+
+    if [ -z "${filename}" ] ; then
+        ANDROID_BUILD_FAIL+=("Unable to detect NDK filename.")
     fi
 
     android_build_check_fail
@@ -90,14 +112,14 @@ function android_download_ndk {
     android_build_trace "Downloading NDK '${NDK_VERSION}'..."
     (
         cd "$(dirname "${ANDROID_NDK_ROOT}")" \
-        && rm -f "${ANDROID_NDK_FILENAME}" \
-        && wget -q "http://dl.google.com/android/repository/${ANDROID_NDK_FILENAME}" -O "${ANDROID_NDK_FILENAME}" \
-        && android_build_trace "Extracting NDK '${ANDROID_NDK_FILENAME}'..." \
-        && unzip -q "${ANDROID_NDK_FILENAME}" \
+        && rm -f "${filename}" \
+        && wget -q "http://dl.google.com/android/repository/${filename}" -O "${filename}" \
+        && android_build_trace "Extracting NDK '${filename}'..." \
+        && unzip -q "${filename}" \
         && android_build_trace "NDK extracted under '${ANDROID_NDK_ROOT}'."
     ) || {
         ANDROID_BUILD_FAIL+=("Failed to install NDK ('${NDK_VERSION}')")
-        ANDROID_BUILD_FAIL+=("  ${ANDROID_NDK_FILENAME}")
+        ANDROID_BUILD_FAIL+=("  ${filename}")
     }
 
     android_build_check_fail
@@ -106,24 +128,12 @@ function android_download_ndk {
 function android_build_set_env {
     BUILD_ARCH=$1
 
-    platform="$(uname | tr '[:upper:]' '[:lower:]')"
+    local platform="$(uname | tr '[:upper:]' '[:lower:]')"
     case "${platform}" in
         linux*)
-            if [ "${NDK_NUMBER}" -ge 2300 ] ; then
-                # Since NDK 23, NDK archives are renamed.
-                export ANDROID_NDK_FILENAME=${NDK_VERSION}-linux.zip
-            else
-                export ANDROID_NDK_FILENAME=${NDK_VERSION}-linux-x86_64.zip
-            fi
             export ANDROID_BUILD_PLATFORM=linux-x86_64
             ;;
         darwin*)
-            if [ "${NDK_NUMBER}" -ge 2300 ] ; then
-                # Since NDK 23, NDK archives are renamed.
-                export ANDROID_NDK_FILENAME=${NDK_VERSION}-darwin.zip
-            else
-                export ANDROID_NDK_FILENAME=${NDK_VERSION}-darwin-x86_64.zip
-            fi
             export ANDROID_BUILD_PLATFORM=darwin-x86_64
             ;;
         *)    android_build_trace "Unsupported platform ('${platform}')" ; exit 1 ;;
@@ -447,44 +457,64 @@ function android_show_configure_opts {
 
 function android_clone_library {
     local tag="$1" ; shift
-    local clone_root="$1" ; shift
-    local clone_url="$1" ; shift 
-    local clone_branch="$1" ; shift
+    local root="$1" ; shift
+    local url="$1" ; shift
+    local branch="$1" ; shift
 
-    mkdir -p "$(dirname "${clone_root}")"
-    if [ -n "${clone_branch}" ] ; then
-	android_build_trace "Cloning '${clone_url}' (branch '${clone_branch}') under '${clone_root}'."
-	git clone --quiet --depth 1 -b "${clone_branch}" "${clone_url}" "${clone_root}"
+    mkdir -p "$(dirname "${root}")"
+    if [ -n "${branch}" ] ; then
+        android_build_trace "Cloning '${url}' (branch '${branch}') under '${root}'."
+        git clone --quiet --depth 1 -b "${branch}" "${url}" "${root}"
     else
-	android_build_trace "Cloning '${clone_url}' (default branch) under '${clone_root}'."
-	git clone --quiet --depth 1 "${clone_url}" "${clone_root}"
+        android_build_trace "Cloning '${url}' (default branch) under '${root}'."
+        git clone --quiet --depth 1 "${url}" "${root}"
     fi
-    ( cd "${clone_root}" && git log --oneline -n 1)  || exit 1
+    ( cd "${root}" && git log --oneline -n 1)  || exit 1
 }
 
-# Caller must set CONFIG_OPTS before call.
+# Caller must set CONFIG_OPTS[], before call.
 function android_build_library {
     local tag=$1 ; shift
-    local clone_root=$1 ; shift
+    local root=$1 ; shift
 
     android_build_trace "Cleaning library '${tag}'."
     (
-        cd "${clone_root}" \
-        && ( make clean || : ) && \
-        rm -f config.status 
-    ) || exit 1
+        if [ -n "${ANDROID_BUILD_PREFIX}" ] && [ -d "${ANDROID_BUILD_PREFIX}" ] ; then
+            # Remove *.la files as they might cause errors with cross compiled libraries
+            find "${ANDROID_BUILD_PREFIX}" -name '*.la' -exec rm {} +
+        fi
 
+        cd "${root}" \
+        && ( make clean || : ) \
+        && rm -f config.status
+    ) &> /dev/null
+
+    android_build_trace "Building library '${tag}'."
     (
-        # Remove *.la files as they might cause errors with cross compiled libraries
-        find "${ANDROID_BUILD_PREFIX}" -name '*.la' -exec rm {} +
+        set -e
 
-        cd "${clone_root}" \
-        && ./autogen.sh \
-        && android_show_configure_opts "${tag}" "${CONFIG_OPTS[@]}" \
-        && ./configure "${CONFIG_OPTS[@]}" \
-        && make -j 4 \
-        && make install
-    ) || exit 1
+        android_show_configure_opts "${tag}" "${CONFIG_OPTS[@]}"
+
+        cd "${root}"
+        if [ -e autogen.sh ]; then
+            ./autogen.sh 2> /dev/null
+        fi
+        if [ -e buildconf ]; then
+            ./buildconf 2> /dev/null
+        fi
+        if [ ! -e autogen.sh ] && [ ! -e buildconf ] && [ ! -e ./configure ] && [ -s ./configure.ac ] ; then
+            libtoolize --copy --force && \
+            aclocal -I . && \
+            autoheader && \
+            automake --add-missing --copy && \
+            autoconf || \
+            autoreconf -fiv
+        fi
+
+        ./configure "${CONFIG_OPTS[@]}"
+        make -j 4
+        make install
+    )
 }
 
 ########################################################################
