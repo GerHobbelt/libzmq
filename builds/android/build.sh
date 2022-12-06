@@ -3,7 +3,7 @@
 set -e
 
 function usage {
-    echo "Usage ./build.sh [ arm | arm64 | x86 | x86_64 ]"
+    echo "LIBZMQ (${BUILD_ARCH}) - Usage ./build.sh [ arm | arm64 | x86 | x86_64 ]"
 }
 
 # Use directory of current script as the build directory and working directory
@@ -25,17 +25,11 @@ if [ -z $BUILD_ARCH ]; then
     exit 1
 fi
 
-case $(uname | tr '[:upper:]' '[:lower:]') in
-  linux*)
-    export HOST_PLATFORM=linux-x86_64
-    ;;
-  darwin*)
-    export HOST_PLATFORM=darwin-x86_64
-    ;;
-  *)
-    echo "Unsupported platform"
-    exit 1
-    ;;
+platform="$(uname | tr '[:upper:]' '[:lower:]')"
+case "${platform}" in
+  linux*)  export HOST_PLATFORM=linux-x86_64 ;;
+  darwin*) export HOST_PLATFORM=darwin-x86_64 ;;
+  *)       echo "LIBZMQ (${BUILD_ARCH}) - Unsupported platform ('${platform}')" ; exit 1 ;;
 esac
 
 # Set default values used in ci builds
@@ -57,16 +51,16 @@ mkdir -p "${cache}"
 
 # Check for environment variable to clear the prefix and do a clean build
 if [[ $ANDROID_BUILD_CLEAN ]]; then
-    echo "Doing a clean build (removing previous build and dependencies)..."
+    echo "LIBZMQ (${BUILD_ARCH}) - Doing a clean build (removing previous build and dependencies)..."
     rm -rf "${ANDROID_BUILD_PREFIX}"/*
 fi
 
+VERIFY=("libzmq.so")
 if [ -z $CURVE ]; then
     CURVE="--disable-curve"
-    VERIFY="libzmq.so"
 elif [ $CURVE == "libsodium" ]; then
     CURVE="--with-libsodium=yes"
-    VERIFY="libzmq.so libsodium.so"
+    VERIFY+=("libsodium.so")
     ##
     # Build libsodium from latest master branch
 
@@ -90,13 +84,12 @@ elif [ $CURVE == "libsodium" ]; then
 elif [ $CURVE == "tweetnacl" ]; then
     # Default
     CURVE=""
-    VERIFY="libzmq.so"
 fi
 
 ##
 # Build libzmq from local source
 
-(android_build_verify_so ${VERIFY} &> /dev/null) || {
+(android_build_verify_so "${VERIFY[@]}" &> /dev/null) || {
     rm -rf "${cache}/libzmq"
     (cp -r ../.. "${cache}/libzmq" && cd "${cache}/libzmq" && ( make clean || : ))
 
@@ -124,5 +117,5 @@ cp "${ANDROID_STL_ROOT}/${ANDROID_STL}" "${ANDROID_BUILD_PREFIX}/lib/."
 ##
 # Verify shared libraries in prefix
 
-android_build_verify_so "${VERIFY}" "${ANDROID_STL}"
-echo "libzmq android build succeeded"
+android_build_verify_so "${VERIFY[@]}" "${ANDROID_STL}"
+echo "LIBZMQ (${BUILD_ARCH}) - Android build successful"
