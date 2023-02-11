@@ -2,6 +2,11 @@
 TOP = .
 include $(TOP)/configure/CONFIG
 
+# libzmq has a doc and include top level dir
+# we do not want to remove files from here on an uninstall
+INSTALL_DOC =
+INSTALL_INCLUDE =
+
 # Directories to build, any order
 DIRS += configure
 DIRS += $(wildcard *Sup)
