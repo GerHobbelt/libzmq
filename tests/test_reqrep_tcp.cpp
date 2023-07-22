@@ -66,7 +66,7 @@ void make_connect_address (char *connect_address_,
                            const int port_,
                            const char *bind_address_)
 {
-    sprintf (connect_address_, "tcp://%s:%i;%s", ipv6_ ? "[::1]" : "127.0.0.1",
+    snprintf (connect_address_, MAX_SOCKET_STRING, "tcp://%s:%i;%s", ipv6_ ? "[::1]" : "127.0.0.1",
              port_, strrchr (bind_address_, '/') + 1);
 }
 

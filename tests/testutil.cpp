@@ -510,7 +510,7 @@ fd_t bind_socket_resolve_port (const char *address_,
         addr_len = sizeof (struct sockaddr_storage);
         TEST_ASSERT_SUCCESS_RAW_ERRNO (
           getsockname (s_pre, (struct sockaddr *) &addr, &addr_len));
-        sprintf (my_endpoint_, "%s://%s:%u",
+        snprintf (my_endpoint_, MAX_SOCKET_STRING, "%s://%s:%u",
                  protocol_ == IPPROTO_TCP
                    ? "tcp"
                    : protocol_ == IPPROTO_UDP
