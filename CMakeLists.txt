@@ -1304,7 +1304,6 @@ endif()
 # -----------------------------------------------------------------------------
 # output
 option(BUILD_SHARED "Whether or not to build the shared object" ON)
-option(BUILD_STATIC "Whether or not to build the static archive" OFF)
 
 if(MSVC)
   # Suppress linker warnings caused by #ifdef omission of file content.
@@ -1359,21 +1358,6 @@ if(MSVC)
       set_target_properties(libzmq PROPERTIES LINK_FLAGS_DEBUG "/OPT:NOICF /OPT:NOREF")
     endif()
   endif()
-
-  if(BUILD_STATIC)
-    add_library(libzmq-static STATIC ${sources} ${CMAKE_CURRENT_BINARY_DIR}/version.rc)
-    set_target_properties(
-      libzmq-static
-      PROPERTIES PUBLIC_HEADER "${public_headers}"
-                 RELEASE_POSTFIX "${MSVC_TOOLSET}-mt-s-${ZMQ_VERSION_MAJOR}_${ZMQ_VERSION_MINOR}_${ZMQ_VERSION_PATCH}"
-                 RELWITHDEBINFO_POSTFIX
-                 "${MSVC_TOOLSET}-mt-s-${ZMQ_VERSION_MAJOR}_${ZMQ_VERSION_MINOR}_${ZMQ_VERSION_PATCH}"
-                 MINSIZEREL_POSTFIX
-                 "${MSVC_TOOLSET}-mt-s-${ZMQ_VERSION_MAJOR}_${ZMQ_VERSION_MINOR}_${ZMQ_VERSION_PATCH}"
-                 DEBUG_POSTFIX "${MSVC_TOOLSET}-mt-sgd-${ZMQ_VERSION_MAJOR}_${ZMQ_VERSION_MINOR}_${ZMQ_VERSION_PATCH}"
-                 COMPILE_FLAGS "/DZMQ_STATIC"
-                 OUTPUT_NAME "lib${ZMQ_OUTPUT_BASENAME}")
-  endif()
 else()
   # avoid building everything twice for shared + static only on *nix, as Windows needs different preprocessor defines in
   # static builds
@@ -1415,40 +1399,12 @@ else()
       set_source_files_properties(${zmq-pkgconfig} PROPERTIES MACOSX_PACKAGE_LOCATION lib/pkgconfig)
     endif()
   endif()
-
-  if(BUILD_STATIC)
-    if(MINGW)
-      add_library(libzmq-static STATIC ${sources} ${public_headers} ${html-docs} ${readme-docs} ${zmq-pkgconfig}
-                                       ${CMAKE_CURRENT_BINARY_DIR}/version.rc)
-    else()
-      if (CMAKE_GENERATOR STREQUAL "Xcode")
-        add_library(libzmq-static STATIC ${sources} ${public_headers} ${html-docs} ${readme-docs}
-                                         ${zmq-pkgconfig} ${CMAKE_CURRENT_BINARY_DIR}/version.rc)
-      else()
-        add_library(libzmq-static STATIC $<TARGET_OBJECTS:objects> ${public_headers} ${html-docs} ${readme-docs}
-                                         ${zmq-pkgconfig} ${CMAKE_CURRENT_BINARY_DIR}/version.rc)
-      endif()
-    endif()
-    if(CMAKE_SYSTEM_NAME MATCHES "QNX")
-      target_link_libraries(libzmq-static m)
-    endif()
-    set_target_properties(
-      libzmq-static PROPERTIES PUBLIC_HEADER "${public_headers}" OUTPUT_NAME "${ZMQ_OUTPUT_BASENAME}" PREFIX "lib")
-  endif()
-endif()
-
-if(BUILD_STATIC)
-  target_compile_definitions(libzmq-static PUBLIC ZMQ_STATIC)
 endif()
 
 list(APPEND target_outputs "")
 
 if(BUILD_SHARED)
   list(APPEND target_outputs "libzmq")
-endif()
-
-if(BUILD_STATIC)
-  list(APPEND target_outputs "libzmq-static")
 endif()
 
 set(build_targets ${target_outputs})
@@ -1521,60 +1477,6 @@ if(BUILD_SHARED)
   endif()
 endif()
 
-if(BUILD_STATIC)
-  target_link_libraries(libzmq-static ${CMAKE_THREAD_LIBS_INIT})
-  if(GNUTLS_FOUND)
-    target_link_libraries(libzmq-static ${GNUTLS_LIBRARIES})
-    target_include_directories(libzmq-static PRIVATE "${GNUTLS_INCLUDE_DIR}")
-  endif()
-
-  if(LIBBSD_FOUND)
-    target_link_libraries(libzmq-static ${LIBBSD_LIBRARIES})
-  endif()
-
-  if(NSS3_FOUND)
-    target_link_libraries(libzmq-static ${NSS3_LIBRARIES})
-  endif()
-
-  if(SODIUM_FOUND)
-    target_link_libraries(libzmq-static ${SODIUM_LIBRARIES})
-    # On Solaris, libsodium depends on libssp
-    if(${CMAKE_SYSTEM_NAME} MATCHES "SunOS")
-      target_link_libraries(libzmq-static ssp)
-    endif()
-  endif()
-
-  if(HAVE_WS2_32)
-    target_link_libraries(libzmq-static ws2_32)
-  elseif(HAVE_WS2)
-    target_link_libraries(libzmq-static ws2)
-  endif()
-
-  if(HAVE_RPCRT4)
-    target_link_libraries(libzmq-static rpcrt4)
-  endif()
-
-  if(HAVE_IPHLAPI)
-    target_link_libraries(libzmq-static iphlpapi)
-  endif()
-
-  if(RT_LIBRARY)
-    target_link_libraries(libzmq-static -lrt)
-  endif()
-
-  if(CMAKE_SYSTEM_NAME MATCHES "QNX")
-    add_definitions(-DUNITY_EXCLUDE_MATH_H)
-  endif()
-
-  if(norm_FOUND)
-      target_link_libraries(libzmq-static norm::norm)
-  endif()
-
-  if(OPENPGM_FOUND)
-      target_link_libraries(libzmq-static ${OPENPGM_LIBRARIES})
-  endif()
-endif()
-
 if(BUILD_SHARED)
   set(perf-tools
       local_lat
@@ -1629,15 +1531,6 @@ if(BUILD_SHARED)
         set_target_properties(${perf-tool} PROPERTIES LINK_FLAGS_DEBUG "/OPT:NOICF /OPT:NOREF")
       endif()
     endforeach()
-
-    if(BUILD_STATIC)
-      add_executable(benchmark_radix_tree perf/benchmark_radix_tree.cpp)
-      target_link_libraries(benchmark_radix_tree libzmq-static)
-      target_include_directories(benchmark_radix_tree PUBLIC "${CMAKE_CURRENT_LIST_DIR}/src")
-      if(ZMQ_HAVE_WINDOWS_UWP)
-        set_target_properties(benchmark_radix_tree PROPERTIES LINK_FLAGS_DEBUG "/OPT:NOICF /OPT:NOREF")
-      endif()
-    endif()
   elseif(WITH_PERF_TOOL)
     message(FATAL_ERROR "Shared library disabled - perf-tools unavailable.")
   endif()
@@ -1659,17 +1552,12 @@ set(ZMQ_BUILD_TESTS
 if(ZMQ_BUILD_TESTS)
   enable_testing() # Enable testing only works in root scope
   add_subdirectory(tests)
-  if(BUILD_STATIC)
-    add_subdirectory(unittests)
-  else()
-    message(WARNING "Not building unit tests, since BUILD_STATIC is not enabled")
-  endif()
 endif()
 
 # -----------------------------------------------------------------------------
 # installer
 
-if(MSVC AND (BUILD_SHARED OR BUILD_STATIC))
+if(MSVC AND (BUILD_SHARED))
   install(
     TARGETS ${target_outputs}
     EXPORT ${PROJECT_NAME}-targets
@@ -1696,7 +1584,7 @@ if(MSVC AND (BUILD_SHARED OR BUILD_STATIC))
       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
       PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT Runtime)
   endif()
-elseif(BUILD_SHARED OR BUILD_STATIC)
+elseif(BUILD_SHARED)
   install(
     TARGETS ${target_outputs}
     EXPORT ${PROJECT_NAME}-targets
@@ -1736,7 +1624,7 @@ else()
       CACHE STRING "install path for ZeroMQConfig.cmake")
 endif()
 
-if((NOT CMAKE_VERSION VERSION_LESS 3.0) AND (BUILD_SHARED OR BUILD_STATIC))
+if((NOT CMAKE_VERSION VERSION_LESS 3.0) AND (BUILD_SHARED))
   export(EXPORT ${PROJECT_NAME}-targets FILE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Targets.cmake")
 endif()
 configure_package_config_file(
@@ -1746,7 +1634,7 @@ write_basic_package_version_file(
   ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
   VERSION ${ZMQ_VERSION_MAJOR}.${ZMQ_VERSION_MINOR}.${ZMQ_VERSION_PATCH}
   COMPATIBILITY AnyNewerVersion)
-if(BUILD_SHARED OR BUILD_STATIC)
+if(BUILD_SHARED)
   install(
     EXPORT ${PROJECT_NAME}-targets
     FILE ${PROJECT_NAME}Targets.cmake
@@ -1873,9 +1761,8 @@ endif()
 # this target will not be correct; continuing anyway [-w dupbuild=warn]"
 if(MSVC
    AND ENABLE_PRECOMPILED
-   AND BUILD_SHARED
-   AND BUILD_STATIC)
-  add_dependencies(libzmq-static libzmq)
+   AND BUILD_SHARED)
+  add_dependencies(libzmq)
 endif()
 
 option(ENABLE_NO_EXPORT "Build with empty ZMQ_EXPORT macro, bypassing platform-based automated detection" OFF)
