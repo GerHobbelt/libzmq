@@ -1755,16 +1755,6 @@ if (ENABLE_CLANG)
   include(ClangFormat)
 endif()
 
-# fixes https://github.com/zeromq/libzmq/issues/3776 The problem is, both libzmq-static libzmq try to use/generate
-# precompiled.pch at the same time Add a dependency, so they run in order and so they dont get in each others way TODO
-# still generates warning "build\x64-Debug\ninja : warning : multiple rules generate precompiled.hpp. builds involving
-# this target will not be correct; continuing anyway [-w dupbuild=warn]"
-if(MSVC
-   AND ENABLE_PRECOMPILED
-   AND BUILD_SHARED)
-  add_dependencies(libzmq)
-endif()
-
 option(ENABLE_NO_EXPORT "Build with empty ZMQ_EXPORT macro, bypassing platform-based automated detection" OFF)
 if(ENABLE_NO_EXPORT)
   message(STATUS "Building with empty ZMQ_EXPORT macro")
