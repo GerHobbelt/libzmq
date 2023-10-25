@@ -64,6 +64,7 @@ set(tests
   test_srcfd
   test_stream_timeout
   test_xpub_manual
+  test_xpub_topic
   test_xpub_welcome_msg
   test_xpub_verbose
   test_base85
@@ -114,6 +115,7 @@ if(NOT WIN32)
     test_proxy
     test_proxy_hwm
     test_proxy_single_socket
+    test_proxy_steerable
     test_proxy_terminate
     test_getsockopt_memset
     test_filter_ipc
