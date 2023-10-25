@@ -163,6 +163,7 @@ if(ENABLE_DRAFTS)
   message(STATUS "Building draft classes and methods")
   option(ENABLE_WS "Enable WebSocket transport" ON)
   option(ENABLE_RADIX_TREE "Use radix tree implementation to manage subscriptions" ON)
+  set(pkg_config_defines "-DZMQ_BUILD_DRAFT_API=1")
 else()
   message(STATUS "Not building draft classes and methods")
   option(ENABLE_WS "Enable WebSocket transport" OFF)
@@ -254,13 +255,13 @@ if(NOT MSVC)
   check_cxx_symbol_exists(strlcpy string.h ZMQ_HAVE_STRLCPY)
 endif()
 
-# Select curve encryption library, defaults to tweetnacl To use libsodium instead, use --with-libsodium(must be
+# Select curve encryption library, defaults to disabled To use libsodium instead, use --with-libsodium(must be
 # installed) To disable curve, use --disable-curve
 
-option(WITH_LIBSODIUM "Use libsodium instead of built-in tweetnacl" ON)
+option(WITH_LIBSODIUM "Use libsodium" OFF)
 option(WITH_LIBSODIUM_STATIC "Use static libsodium library" OFF)
 option(ENABLE_LIBSODIUM_RANDOMBYTES_CLOSE "Automatically close libsodium randombytes. Not threadsafe without getrandom()" ON)
-option(ENABLE_CURVE "Enable CURVE security" ON)
+option(ENABLE_CURVE "Enable CURVE security" OFF)
 
 if(ENABLE_CURVE)
   if(WITH_LIBSODIUM)
@@ -279,16 +280,10 @@ if(ENABLE_CURVE)
       endif()
     else()
       message(
-        WARNING
-          "libsodium not installed, instead using builtin tweetnacl, you may want to install libsodium and run cmake again"
+        ERROR
+          "libsodium not installed, you may want to install libsodium and run cmake again"
       )
     endif()
-  endif()
-  if(NOT ZMQ_HAVE_CURVE)
-    message(STATUS "Using tweetnacl for CURVE security")
-    list(APPEND sources ${CMAKE_CURRENT_SOURCE_DIR}/src/tweetnacl.c)
-    set(ZMQ_USE_TWEETNACL 1)
-    set(ZMQ_HAVE_CURVE 1)
   endif()
 else()
   message(STATUS "CURVE security is disabled")
@@ -1464,7 +1459,6 @@ foreach(target ${build_targets})
 
   if(ENABLE_DRAFTS)
     target_compile_definitions(${target} PUBLIC ZMQ_BUILD_DRAFT_API)
-    set(pkg_config_defines "-DZMQ_BUILD_DRAFT_API=1")
   endif()
 endforeach()
 
@@ -1517,6 +1511,10 @@ if(BUILD_SHARED)
   if(norm_FOUND)
       target_link_libraries(libzmq norm::norm)
   endif()
+
+  if(OPENPGM_FOUND)
+      target_link_libraries(libzmq ${OPENPGM_LIBRARIES})
+  endif()
 endif()
 
 if(BUILD_STATIC)
@@ -1566,6 +1564,10 @@ if(BUILD_STATIC)
 
   if(norm_FOUND)
       target_link_libraries(libzmq-static norm::norm)
+  endif()
+
+  if(OPENPGM_FOUND)
+      target_link_libraries(libzmq-static ${OPENPGM_LIBRARIES})
   endif()
 endif()
 
