@@ -100,6 +100,10 @@ struct options_t
     //  Default 100ms
     int reconnect_ivl;
 
+    //  Maximum interval between attempts to reconnect, in milliseconds.
+    //  Default 0ms (meaning maximum interval is disabled)
+    int reconnect_ivl_max;
+
     //  Maximum backlog for pending connections.
     int backlog;
 
