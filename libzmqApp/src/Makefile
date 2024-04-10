@@ -82,6 +82,8 @@ install2:
 	$(CMAKE) $(TOP) -G "$(CMAKE_GENERATOR)" $(CMAKE_PLATFORM) -DCMAKE_INSTALL_PREFIX:PATH="$(LIBZMQ_INSTALL)" $(CMAKE_CONFIG_FLAGS)
 	$(CMAKE) --build . --target install --config $(CMAKE_CONFIG) $(CMAKE_BUILD_FLAGS)
 
+clean:
+	$(RMDIR) $(LIBZMQ_INSTALL) O.Common O.$(EPICS_HOST_ARCH)
 
 #clean::
 #	$(MAKE) -C mysql-connector-c -f Makefile.epics clean T_A=$(T_A) CMAKE_CONFIG=$(CMAKE_CONFIG) PLATFORM=$(PLATFORM) MYSQL_DIR="$(MYSQL_DIR)"

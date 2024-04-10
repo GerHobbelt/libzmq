@@ -2,6 +2,8 @@
 TOP = .
 include $(TOP)/configure/CONFIG
 
+UNINSTALL_DIRS += zmqinstall
+
 # libzmq has a doc and include top level dir
 # we do not want to remove files from here on an uninstall
 INSTALL_DOC =
