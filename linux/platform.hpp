@@ -57,7 +57,7 @@
 #define HAVE_ACCEPT4
 #define HAVE_STRNLEN
 /* #undef ZMQ_HAVE_STRLCPY */
-#define ZMQ_HAVE_LIBBSD
+/* #undef ZMQ_HAVE_LIBBSD */
 
 #define ZMQ_HAVE_IPC
 #define ZMQ_HAVE_STRUCT_SOCKADDR_UN
